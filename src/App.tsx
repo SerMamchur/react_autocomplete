@@ -1,32 +1,37 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import './App.scss';
 import { peopleFromServer } from './data/people';
-import Autocomplete from './commponents/Autocomplete';
+import Autocomplete from './components/Autocomplete';
 import { Person } from './types/Person';
+import debounce from 'lodash.debounce';
 
 export const App: React.FC = () => {
   // const { name, born, died } = peopleFromServer[0];
   const [peoples] = useState(peopleFromServer);
-  const [selectedPerson, SetSelectedPerson] = useState<Person | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [query, SetQuery] = useState('');
+  const [query, setQuery] = useState('');
+  const [apliedQuery, setApliedQuery] = useState('');
+
+  const apllyQuery = useCallback(debounce(setApliedQuery, 1000), []);
 
   const handleSelect = (person: Person) => {
-    SetSelectedPerson(person);
+    setSelectedPerson(person);
     setIsOpen(false);
-    SetQuery(person.name);
+    setQuery(person.name);
   };
 
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    SetSelectedPerson(null);
-    SetQuery(event.target.value);
+    setSelectedPerson(null);
+    setQuery(event.target.value);
+    apllyQuery(event.target.value);
   };
 
-  const fillteredPeoples = useMemo(() => {
+  const filteredPeoples = useMemo(() => {
     return peoples.filter(man =>
-      man.name.toLowerCase().includes(query.toLowerCase()),
+      man.name.toLowerCase().includes(apliedQuery.trimStart().toLowerCase()),
     );
-  }, [query, peoples]);
+  }, [apliedQuery, peoples]);
 
   return (
     <div className="container">
@@ -51,11 +56,11 @@ export const App: React.FC = () => {
           </div>
 
           <div className="dropdown-menu" role="menu" data-cy="suggestions-list">
-            <Autocomplete people={fillteredPeoples} onSelected={handleSelect} />
+            <Autocomplete people={filteredPeoples} onSelected={handleSelect} />
           </div>
         </div>
 
-        {fillteredPeoples.length === 0 && query !== '' && (
+        {filteredPeoples.length === 0 && query !== '' && (
           <div
             className="
             notification
